@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/jackc/pgx/v4"
 )
 
 type Event struct {
@@ -50,6 +52,10 @@ func handler(event Event) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate press release: %w", err)
 	}
+
+	userID := event.UserID
+	siteURL := event.SiteURL
+	insertPressRelease(title, pressRelease, userID, siteURL)
 
 	return map[string]interface{}{
 		"press_release": pressRelease,
@@ -124,4 +130,28 @@ func generatePressRelease(title, content string) (string, error) {
 	}
 
 	return openAIResp.Choices[0].Message.Content, nil
+}
+
+func insertPressRelease(title string, content string, userID string, siteURL string) {
+	// NOTE: DBのパスワードに # が含まれており、エスケープする必要があります
+	connString := strings.ReplaceAll(os.Getenv("SUPABASE_DB_URL"), "#", "%23")
+	if connString == "" {
+		fmt.Println("Supabase connection URL not set")
+		return
+	}
+
+	conn, err := pgx.Connect(context.Background(), connString)
+	if err != nil {
+		fmt.Println("Unable to connect to database:", err)
+		return
+	}
+	defer conn.Close(context.Background())
+
+	_, err = conn.Exec(context.Background(), "INSERT INTO public.\"Articles\" (title, content, user_id, source, approved) VALUES ($1, $2, $3, $4, false)", title, content, userID, siteURL)
+	if err != nil {
+		fmt.Println("Error inserting data:", err)
+		return
+	}
+
+	fmt.Println("Data inserted successfully!!!!")
 }
