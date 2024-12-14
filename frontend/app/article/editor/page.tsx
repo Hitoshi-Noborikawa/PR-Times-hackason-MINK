@@ -19,7 +19,7 @@ export default async function EditorPage() {
 
   return (
     <>
-          <Editor userId={user?.id} article={articles[0].content} />
+        <Editor userId={user?.id} articleId={articles[0].id} initialContent={articles[0].content} />
     </>
   );
 }
