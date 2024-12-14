@@ -13,6 +13,10 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -34,7 +38,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(event Event) (map[string]interface{}, error) {
+func handler(ctx context.Context, event Event) (map[string]interface{}, error) {
 	decodedHTML, err := base64.StdEncoding.DecodeString(event.HTMLBase64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode HTML: %w", err)
@@ -53,9 +57,23 @@ func handler(event Event) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("failed to generate press release: %w", err)
 	}
 
+	conn, err := connectDB()
+	defer conn.Close(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect DB: %w", err)
+	}
+
 	userID := event.UserID
 	siteURL := event.SiteURL
-	insertPressRelease(title, pressRelease, userID, siteURL)
+	articleID, err := insertPressRelease(conn, title, pressRelease, userID, siteURL)
+	if err != nil || articleID == 0 {
+		return nil, fmt.Errorf("failed to insert press release: %w", err)
+	}
+
+	err = sendEmail(conn, ctx, userID, articleID)
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"press_release": pressRelease,
@@ -132,26 +150,93 @@ func generatePressRelease(title, content string) (string, error) {
 	return openAIResp.Choices[0].Message.Content, nil
 }
 
-func insertPressRelease(title string, content string, userID string, siteURL string) {
+func connectDB() (*pgx.Conn, error) {
 	// NOTE: DBのパスワードに # が含まれており、エスケープする必要があります
 	connString := strings.ReplaceAll(os.Getenv("SUPABASE_DB_URL"), "#", "%23")
 	if connString == "" {
 		fmt.Println("Supabase connection URL not set")
-		return
 	}
 
 	conn, err := pgx.Connect(context.Background(), connString)
 	if err != nil {
 		fmt.Println("Unable to connect to database:", err)
-		return
+		return nil, err
 	}
-	defer conn.Close(context.Background())
 
-	_, err = conn.Exec(context.Background(), "INSERT INTO public.\"Articles\" (title, content, user_id, source, approved) VALUES ($1, $2, $3, $4, false)", title, content, userID, siteURL)
+	return conn, nil
+}
+
+func insertPressRelease(conn *pgx.Conn, title string, content string, userID string, siteURL string) (int, error) {
+	var articleID int
+	err := conn.QueryRow(
+			context.Background(),
+			`INSERT INTO public."Articles" (title, content, user_id, source, approved) VALUES ($1, $2, $3, $4, false) RETURNING id`,
+			title, content, userID, siteURL,
+	).Scan(&articleID)
 	if err != nil {
 		fmt.Println("Error inserting data:", err)
-		return
+		return 0, err
 	}
 
 	fmt.Println("Data inserted successfully!!!!")
+	return articleID, nil
+}
+
+func sendEmail(conn *pgx.Conn, ctx context.Context, userID string, articleID int) error {
+	rows, err := conn.Query(context.Background(), "SELECT notification_email FROM public.\"Jobs\" WHERE user_id = $1;", userID)
+	if err != nil {
+		return fmt.Errorf("failed to select email: %w", err)
+	}
+	defer rows.Close()
+	var emails []string
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			fmt.Printf("failed to scan row: %v", err)
+			continue
+		}
+		emails = append(emails, email)
+	}
+
+	for _, email := range emails {
+		fmt.Printf("Notification Email: %s\n", email)
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	sesClient := ses.NewFromConfig(cfg)
+	url := fmt.Sprintf("%s/article/%d", os.Getenv("APP_URL"), articleID)
+	sender := os.Getenv("SES_SENDER")
+	subject := "プレスリリースの自動生成が完了しました"
+	body := fmt.Sprintf(`
+プレスリリースの自動生成が完了しました。
+以下のURLからご確認ください。
+%s
+`, url)
+	input := &ses.SendEmailInput{
+		Destination: &types.Destination{
+			ToAddresses: emails,
+		},
+		Message: &types.Message{
+			Body: &types.Body{
+				Text: &types.Content{
+					Charset: aws.String("UTF-8"),
+					Data: aws.String(body),
+				},
+			},
+			Subject: &types.Content{
+				Charset: aws.String("UTF-8"),
+				Data: aws.String(subject),
+			},
+		},
+		Source: aws.String(sender),
+	}
+	_, err = sesClient.SendEmail(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	return nil
 }
