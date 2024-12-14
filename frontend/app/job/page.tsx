@@ -9,10 +9,12 @@ const JobForm = () => {
     url: string;
     article_title: string;
     executable: boolean;
+    notification_email: string;
   } | null>(null); // 既存データの状態管理
   const [url, setUrl] = useState("");
   const [articleTitle, setArticleTitle] = useState("");
   const [executable, setExecutable] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,6 +47,7 @@ const JobForm = () => {
         setUrl(data.url);
         setArticleTitle(data.article_title);
         setExecutable(data.executable);
+        setNotificationEmail(data.notification_email);
       }
     };
 
@@ -65,7 +68,12 @@ const JobForm = () => {
     // 更新処理
     const { error } = await supabase
       .from("Jobs")
-      .update({ url, article_title: articleTitle, executable })
+      .update({
+        url,
+        article_title: articleTitle,
+        executable,
+        notification_email: notificationEmail,
+      })
       .eq("id", job.id);
 
     if (error) {
@@ -112,6 +120,17 @@ const JobForm = () => {
               checked={executable}
               onChange={(e) => setExecutable(e.target.checked)}
               style={{ marginLeft: "10px" }}
+            />
+          </label>
+          <label>
+            Notification Email:
+            <input
+              type="email"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              required
+              placeholder="Enter a notification email"
+              style={{ width: "100%", padding: "8px", fontSize: "16px" }}
             />
           </label>
           <button
