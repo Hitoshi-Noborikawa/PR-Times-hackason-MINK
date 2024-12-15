@@ -86,8 +86,8 @@ const Editor: React.FC<EditorProps> = ({ userId, articleId, initialContent, appr
           <MDEditor
             value={value}
             onChange={(val) => setValue(val || "")}
-            height={500}
-            style={{ width: "800px" }}
+            height={550}
+            style={{ width: "900px" }}
           />
         </div>
       </div>
