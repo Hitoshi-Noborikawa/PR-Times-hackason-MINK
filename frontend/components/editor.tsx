@@ -48,8 +48,15 @@ const Editor: React.FC<EditorProps> = ({ userId, articleId, initialContent }) =>
 
   return (
     <>
-      <div style={{ padding: "20px" }}>
-        <MDEditor value={value} onChange={(val) => setValue(val || "")} height={400} />
+      <div className="w-full max-w-4xl mx-auto p-4">
+        <div className="border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+          <MDEditor
+            value={value}
+            onChange={(val) => setValue(val || "")}
+            height={500}
+            style={{ width: '800px' }}
+          />
+        </div>
       </div>
       <div>
         <button
