@@ -78,83 +78,87 @@ const JobForm = () => {
 
     if (error) {
       console.error("Update error:", error);
-      setMessage("Failed to update the job.");
+      setMessage("更新が失敗しました");
     } else {
-      setMessage("Job updated successfully!");
+      setMessage("更新が完了しました");
     }
 
     setIsSubmitting(false);
   };
 
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
-      <h1>{job ? "Edit Job" : "No Job Found"}</h1>
-      {job ? (
-        <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          <label>
-            URL:
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              required
-              placeholder="Enter a valid URL"
-              style={{ width: "100%", padding: "8px", fontSize: "16px" }}
-            />
-          </label>
-          <label>
-            Article Title:
-            <input
-              type="text"
-              value={articleTitle}
-              onChange={(e) => setArticleTitle(e.target.value)}
-              required
-              placeholder="Enter the article title"
-              style={{ width: "100%", padding: "8px", fontSize: "16px" }}
-            />
-          </label>
-          <label>
-            Executable:
-            <input
-              type="checkbox"
-              checked={executable}
-              onChange={(e) => setExecutable(e.target.checked)}
-              style={{ marginLeft: "10px" }}
-            />
-          </label>
-          <label>
-            Notification Email:
-            <input
-              type="email"
-              value={notificationEmail}
-              onChange={(e) => setNotificationEmail(e.target.value)}
-              required
-              placeholder="Enter a notification email"
-              style={{ width: "100%", padding: "8px", fontSize: "16px" }}
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: isSubmitting ? "#ddd" : "#007bff",
-              color: "#fff",
-              border: "none",
-              cursor: isSubmitting ? "not-allowed" : "pointer",
-              fontSize: "16px",
-            }}
-          >
-            {isSubmitting ? "Updating..." : "Update"}
-          </button>
-        </form>
-      ) : (
-        <div>No job data found for the current user.</div>
-      )}
+    <div className="min-h-screen flex flex-col justify-center sm:py-12">
       {message && (
-        <div style={{ marginTop: "20px", color: message.includes("successfully") ? "green" : "red" }}>
+        <div style={{ marginTop: "20px", color: message.includes("更新が完了しました") ? "green" : "red" }}>
           {message}
         </div>
+      )}
+      {job ? (
+        <div className="min-h-screen px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="px-4 py-5 sm:p-6">
+              <h1 className="text-2xl leading-6 font-medium text-gray-900 mb-4">プレスリリース自動生成の設定</h1>
+              <form onSubmit={handleUpdate} className="py-3 space-y-4">
+                <label htmlFor="url" className="block text-sm font-medium text-gray-700">
+                  公式サイトURL
+                </label>
+                <input
+                  id="url"
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  required
+                  placeholder="https://example.com"
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+                <label htmlFor="executable" className="pt-3 block text-sm font-medium text-gray-700">
+                  自動生成のオン・オフ
+                </label>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    className={`${
+                      executable ? 'bg-indigo-600' : 'bg-gray-200'
+                    } relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                    role="switch"
+                    aria-checked={executable}
+                    onClick={() => setExecutable(!executable)}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`${
+                        executable ? 'translate-x-5' : 'translate-x-0'
+                      } pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200`}
+                    />
+                  </button>
+                  <span className="ml-3 text-sm font-medium text-gray-700">
+                    {executable ? 'オン' : 'オフ'}
+                  </span>
+                </div>
+                <label htmlFor="email" className="pt-3 block text-sm font-medium text-gray-700">
+                  通知先メールアドレス
+                </label>
+                <input
+                  type="email"
+                  value={notificationEmail}
+                  onChange={(e) => setNotificationEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  {isSubmitting ? "更新中..." : "更新"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>No job data found for the current user.</div>
       )}
     </div>
   );
