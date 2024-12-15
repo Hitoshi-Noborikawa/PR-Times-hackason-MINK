@@ -49,7 +49,7 @@ const Editor: React.FC<EditorProps> = ({ userId, articleId, initialContent }) =>
   return (
     <>
       <div style={{ padding: "20px" }}>
-        <MDEditor value={value} onChange={setValue} height={400} width={400} />
+        <MDEditor value={value} onChange={(val) => setValue(val || "")} height={400} />
       </div>
       <div>
         <button

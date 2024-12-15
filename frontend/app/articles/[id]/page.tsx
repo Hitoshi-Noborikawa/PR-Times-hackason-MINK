@@ -2,7 +2,10 @@ import Editor from "@/components/editor";
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 
-export default async function EditorPage({ params }: { params: { id: string } }) {
+type PageProps = {
+  params: Promise<{ id: string }>
+};
+export default async function EditorPage({ params }: PageProps) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -12,10 +15,11 @@ export default async function EditorPage({ params }: { params: { id: string } })
     return <div>Please log in to view this page.</div>;
   }
 
+  const paramId = (await params).id;
   const { data: article, error } = await supabase
     .from("Articles")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", paramId)
     .eq("user_id", user.id)
     .single();
 
@@ -26,7 +30,7 @@ export default async function EditorPage({ params }: { params: { id: string } })
 
   return (
     <div>
-      <Editor userId={user.id} articleId={article.id} initialContent={article.content} />
+      <Editor userId={user.id} articleId={article.id ?? ''} initialContent={article.content ?? ''} />
     </div>
   );
 }
