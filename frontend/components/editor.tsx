@@ -72,13 +72,6 @@ const Editor: React.FC<EditorProps> = ({ userId, articleId, initialContent }) =>
           </div>
         )}
       </div>
-      <div style={{ marginTop: "20px" }}>
-        Logged in user ID: {userId || "Guest"}
-      </div>
-      <div>
-        Initial Content:
-        <pre>{initialContent}</pre>
-      </div>
     </>
   );
 };
