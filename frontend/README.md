@@ -29,6 +29,7 @@
 - supabase-ssr. A package to configure Supabase Auth to use cookies
 - Styling with [Tailwind CSS](https://tailwindcss.com)
 - Components with [shadcn/ui](https://ui.shadcn.com/)
+　「npx shadcn@latest add button form input」のように追加していく
 - Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
   - Environment variables automatically assigned to Vercel project
 
