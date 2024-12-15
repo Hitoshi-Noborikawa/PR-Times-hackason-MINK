@@ -30,7 +30,7 @@ export default async function EditorPage({ params }: PageProps) {
 
   return (
     <div>
-      <Editor userId={user.id} articleId={article.id ?? ''} initialContent={article.content ?? ''} />
+      <Editor userId={user.id} articleId={article.id ?? ''} initialContent={article.content ?? ''} approved={article.approved} />
     </div>
   );
 }
